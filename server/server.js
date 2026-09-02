@@ -1,0 +1,26 @@
+import express from 'express';
+import dotenv from 'dotenv';
+import cors from 'cors';
+import { clerkMiddleware } from '@clerk/express'
+import { serve } from "inngest/express";
+import { ingest, functions } from "./ingest/index.js";
+
+const app = express();
+
+
+
+app.use(express.json());
+app.use(cors());
+app.use(clerkMiddleware());
+
+app.get('/', (req, res) => {
+    res.send('Hello World!');
+})
+
+app.use('/api/ingest', serve({ client: ingest, functions }));
+
+const PORT = process.env.PORT || 5000;
+
+app.listen(PORT, () => {
+    console.log(`Server is running on port ${PORT}`);
+})
