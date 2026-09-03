@@ -4,7 +4,7 @@ import prisma from "../config/prisma.js"
 // Create a client to send and receive events
 export const inngest = new Inngest({ id: "project-management" });
 
-// ingest function to save user data to database
+// inngest function to save user data to database
 
 const syncUserCreation = inngest.createFunction(
     { id: 'sync-user-from-clerk', triggers: [{ event: 'clerk/user.created' }] },
@@ -22,7 +22,7 @@ const syncUserCreation = inngest.createFunction(
     }
 )
 
-// ingest function to delete user data from database
+// inngest function to delete user data from database
 const syncUserDeletion = inngest.createFunction(
     { id: 'delete-user-with-clerk', triggers: [{ event: 'clerk/user.deleted' }] },
     async ({ event }) => {
@@ -35,7 +35,7 @@ const syncUserDeletion = inngest.createFunction(
     }
 )
 
-// ingest function to update user data from database
+// inngest function to update user data from database
 const syncUserUpdation = inngest.createFunction(
     { id: 'update-user-from-clerk', triggers: [{ event: 'clerk/user.updated' }] },
     async ({ event }) => {
