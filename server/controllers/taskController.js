@@ -165,7 +165,7 @@ export const updateTask = async (req, res) => {
 export const deleteTask = async (req, res) => {
     try {
         const { userId } = await req.auth();
-        const { taskIds } = req.body.tasksIds || req.body.taskIds || (req.params.id ? [req.params.id] : []);
+        const taskIds = req.body.taskIds || req.body.tasksIds || [];
 
         if (!taskIds || taskIds.length === 0) {
             return res.status(400).json({ message: "No task IDs provided" });

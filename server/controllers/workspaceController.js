@@ -1,11 +1,77 @@
 import prisma from '../config/prisma.js'
-
+import { clerkClient } from '@clerk/express'
 
 // get all workspace user
 
 export const getUserWorkspaces = async (req, res) => {
     try {
         const { userId } = await req.auth();
+        if (!userId) {
+            return res.status(401).json({ message: "Unauthorized" });
+        }
+
+        // Auto-sync user and organizations from Clerk if not already synced or on login
+        try {
+            const clerkUser = await clerkClient.users.getUser(userId);
+            if (clerkUser) {
+                await prisma.user.upsert({
+                    where: { id: userId },
+                    update: {
+                        email: clerkUser.emailAddresses?.[0]?.emailAddress || '',
+                        name: [clerkUser.firstName, clerkUser.lastName].filter(Boolean).join(' ') || 'User',
+                        image: clerkUser.imageUrl || '',
+                    },
+                    create: {
+                        id: userId,
+                        email: clerkUser.emailAddresses?.[0]?.emailAddress || '',
+                        name: [clerkUser.firstName, clerkUser.lastName].filter(Boolean).join(' ') || 'User',
+                        image: clerkUser.imageUrl || '',
+                    },
+                });
+
+                const memberships = await clerkClient.users.getOrganizationMembershipList({ userId });
+                if (memberships?.data) {
+                    for (const m of memberships.data) {
+                        const org = m.organization;
+                        await prisma.workspace.upsert({
+                            where: { id: org.id },
+                            update: {
+                                name: org.name,
+                                slug: org.slug || org.id,
+                                image_url: org.imageUrl || '',
+                            },
+                            create: {
+                                id: org.id,
+                                name: org.name,
+                                slug: org.slug || org.id,
+                                ownerId: org.createdBy || userId,
+                                image_url: org.imageUrl || '',
+                            },
+                        });
+
+                        await prisma.workspaceMember.upsert({
+                            where: {
+                                userId_workspaceId: {
+                                    userId: userId,
+                                    workspaceId: org.id,
+                                },
+                            },
+                            update: {
+                                role: (m.role === 'admin' || m.role === 'org:admin') ? 'ADMIN' : 'MEMBER',
+                            },
+                            create: {
+                                userId: userId,
+                                workspaceId: org.id,
+                                role: (m.role === 'admin' || m.role === 'org:admin') ? 'ADMIN' : 'MEMBER',
+                            },
+                        });
+                    }
+                }
+            }
+        } catch (syncError) {
+            console.error("Clerk auto-sync error in getUserWorkspaces:", syncError);
+        }
+
         const workspaces = await prisma.workspace.findMany({
             where: {
                 members: {

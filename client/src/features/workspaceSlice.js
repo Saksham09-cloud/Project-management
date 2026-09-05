@@ -21,7 +21,7 @@ export const fetchWorkspaces = createAsyncThunk(
 const initialState = {
     workspaces: [],
     currentWorkspace: null,
-    loading: false,
+    loading: true,
 };
 
 const workspaceSlice = createSlice({
