@@ -43,8 +43,8 @@ export const getUserWorkspaces = async (req, res) => {
 
 
     }
-    catch (err) {
-        console.log(err);
+    catch (error) {
+        console.log(error);
         return res.status(500).json({ message: error.code || error.message || 'Internal server error' });
     }
 }
@@ -104,8 +104,8 @@ export const Addmember = async (req, res) => {
         })
         res.json({ success: true, member })
     }
-    catch (err) {
-        console.log(err);
+    catch (error) {
+        console.log(error);
         return res.status(500).json({ message: error.code || error.message || 'Internal server error' });
     }
 }

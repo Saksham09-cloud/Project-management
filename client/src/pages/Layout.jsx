@@ -4,9 +4,10 @@ import Sidebar from '../components/Sidebar'
 import { Outlet } from 'react-router-dom'
 import { useDispatch, useSelector } from 'react-redux'
 import { loadTheme } from '../features/themeSlice'
+import { fetchWorkspaces } from '../features/workspaceSlice'
 import { Loader2Icon } from 'lucide-react'
 
-import { useUser, SignIn, UseAuth } from "@clerk/react";
+import { useUser, SignIn, useAuth, CreateOrganization, useOrganizationList } from "@clerk/react";
 
 const Layout = () => {
     const [isSidebarOpen, setIsSidebarOpen] = useState(false)
@@ -14,12 +15,19 @@ const Layout = () => {
     const dispatch = useDispatch()
     const { user, isLoaded } = useUser();
     const { getToken } = useAuth()
-
+    const { userMemberships } = useOrganizationList({ userMemberships: true })
 
     // Initial load of theme
     useEffect(() => {
         dispatch(loadTheme())
     }, [dispatch])
+
+    // Initial load and refetch of workspaces
+    useEffect(() => {
+        if (isLoaded && user) {
+            dispatch(fetchWorkspaces({ getToken }))
+        }
+    }, [user, isLoaded, userMemberships?.data?.length])
 
     if (!isLoaded) {
         return (
@@ -37,12 +45,21 @@ const Layout = () => {
         )
     }
 
+    if (loading) {
+        return (
+            <div className='flex items-center justify-center h-screen bg-white dark:bg-zinc-950'>
+                <Loader2Icon className="size-7 text-blue-500 animate-spin" />
+            </div>
+        )
+    }
 
-    if (loading) return (
-        <div className='flex items-center justify-center h-screen bg-white dark:bg-zinc-950'>
-            <Loader2Icon className="size-7 text-blue-500 animate-spin" />
-        </div>
-    )
+    if (user && workspaces.length === 0) {
+        return (
+            <div className='flex items-center justify-center h-screen bg-white dark:bg-zinc-950'>
+                <CreateOrganization afterCreateOrganizationUrl="/" skipInvitationScreen />
+            </div>
+        )
+    }
 
     return (
         <div className="flex bg-white dark:bg-zinc-950 text-gray-900 dark:text-slate-100">

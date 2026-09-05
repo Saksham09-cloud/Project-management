@@ -10,13 +10,10 @@ export const inngest = new Inngest({
 // ======================================================
 // USER CREATION
 // ======================================================
-
 const syncUserCreation = inngest.createFunction(
     {
         id: "sync-user-from-clerk",
-    },
-    {
-        event: "clerk/user.created",
+        triggers: [{ event: "clerk/user.created" }],
     },
     async ({ event }) => {
         const { data } = event;
@@ -35,13 +32,10 @@ const syncUserCreation = inngest.createFunction(
 // ======================================================
 // USER DELETION
 // ======================================================
-
 const syncUserDeletion = inngest.createFunction(
     {
         id: "delete-user-with-clerk",
-    },
-    {
-        event: "clerk/user.deleted",
+        triggers: [{ event: "clerk/user.deleted" }],
     },
     async ({ event }) => {
         const { data } = event;
@@ -57,13 +51,10 @@ const syncUserDeletion = inngest.createFunction(
 // ======================================================
 // USER UPDATE
 // ======================================================
-
 const syncUserUpdation = inngest.createFunction(
     {
         id: "update-user-from-clerk",
-    },
-    {
-        event: "clerk/user.updated",
+        triggers: [{ event: "clerk/user.updated" }],
     },
     async ({ event }) => {
         const { data } = event;
@@ -84,13 +75,10 @@ const syncUserUpdation = inngest.createFunction(
 // ======================================================
 // WORKSPACE CREATION
 // ======================================================
-
 const syncWorkspaceCreation = inngest.createFunction(
     {
         id: "sync-workspace-from-clerk",
-    },
-    {
-        event: "clerk/organization.created",
+        triggers: [{ event: "clerk/organization.created" }],
     },
     async ({ event }) => {
         const { data } = event;
@@ -119,13 +107,10 @@ const syncWorkspaceCreation = inngest.createFunction(
 // ======================================================
 // WORKSPACE UPDATE
 // ======================================================
-
 const syncWorkspaceUpdation = inngest.createFunction(
     {
         id: "update-workspace-from-clerk",
-    },
-    {
-        event: "clerk/organization.updated",
+        triggers: [{ event: "clerk/organization.updated" }],
     },
     async ({ event }) => {
         const { data } = event;
@@ -146,13 +131,10 @@ const syncWorkspaceUpdation = inngest.createFunction(
 // ======================================================
 // WORKSPACE DELETION
 // ======================================================
-
 const syncWorkspaceDeletion = inngest.createFunction(
     {
         id: "delete-workspace-from-clerk",
-    },
-    {
-        event: "clerk/organization.deleted",
+        triggers: [{ event: "clerk/organization.deleted" }],
     },
     async ({ event }) => {
         const { data } = event;
@@ -168,13 +150,10 @@ const syncWorkspaceDeletion = inngest.createFunction(
 // ======================================================
 // WORKSPACE MEMBER CREATION
 // ======================================================
-
 const syncWorkspaceMemberCreation = inngest.createFunction(
     {
         id: "sync-workspace-member-from-clerk",
-    },
-    {
-        event: "clerk/organizationInvitation.accepted",
+        triggers: [{ event: "clerk/organizationInvitation.accepted" }],
     },
     async ({ event }) => {
         const { data } = event;
@@ -192,13 +171,10 @@ const syncWorkspaceMemberCreation = inngest.createFunction(
 // ======================================================
 // TASK ASSIGNMENT EMAIL
 // ======================================================
-
 const sendTaskAssignmentEmail = inngest.createFunction(
     {
         id: "send-task-assignment-email",
-    },
-    {
-        event: "app/task.assigned",
+        triggers: [{ event: "app/task.assigned" }],
     },
     async ({ event, step }) => {
         const { taskId, origin } = event.data;
@@ -215,7 +191,7 @@ const sendTaskAssignmentEmail = inngest.createFunction(
         });
 
         // If task doesn't exist, stop
-        if (!task) {
+        if (!task || !task.assignee?.email) {
             return;
         }
 
@@ -227,13 +203,10 @@ const sendTaskAssignmentEmail = inngest.createFunction(
         // ==================================================
         // SEND ASSIGNMENT EMAIL
         // ==================================================
-
         await step.run("send-task-assignment-email", async () => {
             await sendEmail({
                 to: task.assignee.email,
-
-                subject: `Reminder for ${task.project.name}`,
-
+                subject: `New Task Assignment in ${task.project.name}`,
                 body: `
                     <div style="max-width: 600px;">
                         <h2>Hi ${task.assignee.name}, 👋</h2>
@@ -259,7 +232,7 @@ const sendTaskAssignmentEmail = inngest.createFunction(
                         ">
                             <p style="margin: 6px 0;">
                                 <strong>Description:</strong>
-                                ${task.description}
+                                ${task.description || "No description provided."}
                             </p>
 
                             <p style="margin: 6px 0;">
@@ -268,7 +241,7 @@ const sendTaskAssignmentEmail = inngest.createFunction(
                             </p>
                         </div>
 
-                        <a href="${origin}" style="
+                        <a href="${origin || "#"}" style="
                             background-color: #007bff;
                             padding: 12px 24px;
                             border-radius: 5px;
@@ -296,7 +269,6 @@ const sendTaskAssignmentEmail = inngest.createFunction(
         // ==================================================
         // WAIT UNTIL DUE DATE
         // ==================================================
-
         const dueDate = new Date(task.due_date);
 
         if (dueDate > new Date()) {
@@ -308,7 +280,6 @@ const sendTaskAssignmentEmail = inngest.createFunction(
             // ==================================================
             // CHECK TASK AFTER DUE DATE
             // ==================================================
-
             await step.run("check-if-task-is-completed", async () => {
                 const updatedTask = await prisma.task.findUnique({
                     where: {
@@ -321,7 +292,7 @@ const sendTaskAssignmentEmail = inngest.createFunction(
                 });
 
                 // Task may have been deleted
-                if (!updatedTask) {
+                if (!updatedTask || !updatedTask.assignee?.email) {
                     return;
                 }
 
@@ -333,12 +304,9 @@ const sendTaskAssignmentEmail = inngest.createFunction(
                 // ==================================================
                 // SEND OVERDUE EMAIL
                 // ==================================================
-
                 await sendEmail({
                     to: updatedTask.assignee.email,
-
                     subject: `Task Overdue: ${updatedTask.title}`,
-
                     body: `
                         <div style="max-width: 600px;">
                             <h2>Hi ${updatedTask.assignee.name},</h2>
@@ -364,18 +332,16 @@ const sendTaskAssignmentEmail = inngest.createFunction(
                             ">
                                 <p style="margin: 6px 0;">
                                     <strong>Description:</strong>
-                                    ${updatedTask.description}
+                                    ${updatedTask.description || "No description provided."}
                                 </p>
 
                                 <p style="margin: 6px 0;">
                                     <strong>Due Date:</strong>
-                                    ${new Date(
-                        updatedTask.due_date
-                    ).toLocaleDateString()}
+                                    ${new Date(updatedTask.due_date).toLocaleDateString()}
                                 </p>
                             </div>
 
-                            <a href="${origin}" style="
+                            <a href="${origin || "#"}" style="
                                 background-color: #007bff;
                                 padding: 12px 24px;
                                 border-radius: 5px;
@@ -405,17 +371,13 @@ const sendTaskAssignmentEmail = inngest.createFunction(
 // ======================================================
 // EXPORT ALL INNGEST FUNCTIONS
 // ======================================================
-
 export const functions = [
     syncUserCreation,
     syncUserDeletion,
     syncUserUpdation,
-
     syncWorkspaceCreation,
     syncWorkspaceUpdation,
     syncWorkspaceDeletion,
-
     syncWorkspaceMemberCreation,
-
     sendTaskAssignmentEmail,
 ];
