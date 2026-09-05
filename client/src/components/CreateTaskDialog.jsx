@@ -1,11 +1,17 @@
 import { useState } from "react";
 import { Calendar as CalendarIcon } from "lucide-react";
-import { useSelector } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
+import { useAuth } from "@clerk/react";
 import { format } from "date-fns";
+import toast from "react-hot-toast";
+import api from "../configs/api";
+import { addTask } from "../features/workspaceSlice";
 
 export default function CreateTaskDialog({ showCreateTask, setShowCreateTask, projectId }) {
+    const { getToken } = useAuth();
+    const dispatch = useDispatch();
     const currentWorkspace = useSelector((state) => state.workspace?.currentWorkspace || null);
-    const project = currentWorkspace?.projects.find((p) => p.id === projectId);
+    const project = currentWorkspace?.projects?.find((p) => p.id === projectId);
     const teamMembers = project?.members || [];
 
     const [isSubmitting, setIsSubmitting] = useState(false);
@@ -21,8 +27,35 @@ export default function CreateTaskDialog({ showCreateTask, setShowCreateTask, pr
 
     const handleSubmit = async (e) => {
         e.preventDefault();
+        if (!formData.title.trim()) {
+            return toast.error("Please enter a task title");
+        }
+        setIsSubmitting(true)
 
+        try {
+            const { data } = await api.post(
+                "/api/tasks",
+                { ...formData, workspaceId: currentWorkspace.id, projectId },
+                { headers: { Authorization: `Bearer ${await getToken()}` } }
+            );
+            showCreateTask(false)
 
+            setFormData({
+                title: "",
+                description: "",
+                type: "TASK",
+                status: "TODO",
+                priority: "MEDIUM",
+                assigneeId: "",
+                due_date: "",
+            })
+            toast.success("Task created successfully");
+            dispatch(addTask(data.task));
+        } catch (error) {
+            toast.error(error?.response?.data?.message || error.message || "Failed to create task");
+        } finally {
+            setIsSubmitting(false);
+        }
     };
 
     return showCreateTask ? (

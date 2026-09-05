@@ -21,16 +21,13 @@ const RecentActivity = () => {
     const [tasks, setTasks] = useState([]);
     const { currentWorkspace } = useSelector((state) => state.workspace);
 
-    const getTasksFromCurrentWorkspace = () => {
-
-        if (!currentWorkspace) return;
-
-        const tasks = currentWorkspace.projects.flatMap((project) => project.tasks.map((task) => task));
-        setTasks(tasks);
-    };
-
     useEffect(() => {
-        getTasksFromCurrentWorkspace();
+        if (!currentWorkspace?.projects) {
+            setTasks([]);
+            return;
+        }
+        const allTasks = currentWorkspace.projects.flatMap((project) => project.tasks || []);
+        setTasks(allTasks);
     }, [currentWorkspace]);
 
     return (
@@ -73,13 +70,13 @@ const RecentActivity = () => {
                                                 {task.assignee && (
                                                     <div className="flex items-center gap-1">
                                                         <div className="w-4 h-4 bg-zinc-300 dark:bg-zinc-700 rounded-full flex items-center justify-center text-[10px] text-zinc-800 dark:text-zinc-200">
-                                                            {task.assignee.name[0].toUpperCase()}
+                                                            {(task.assignee.name || task.assignee.email || "U")[0].toUpperCase()}
                                                         </div>
-                                                        {task.assignee.name}
+                                                        {task.assignee.name || task.assignee.email}
                                                     </div>
                                                 )}
                                                 <span>
-                                                    {format(new Date(task.updatedAt), "MMM d, h:mm a")}
+                                                    {task.updatedAt ? format(new Date(task.updatedAt), "MMM d, h:mm a") : ""}
                                                 </span>
                                             </div>
                                         </div>

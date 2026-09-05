@@ -1,5 +1,5 @@
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
-import api from "../../configs/api";
+import api from "../configs/api";
 
 export const fetchWorkspaces = createAsyncThunk(
     "workspace/fetchWorkspaces",

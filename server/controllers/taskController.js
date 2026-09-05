@@ -59,7 +59,7 @@ export const createTask = async (req, res) => {
                 type: type || "TASK",
                 priority: priority || "MEDIUM",
                 status: status || "TODO",
-                assigneeId: assigneeId || userId,
+                type,
                 due_date: due_date ? new Date(due_date) : new Date(),
             }
         })
@@ -165,7 +165,7 @@ export const updateTask = async (req, res) => {
 export const deleteTask = async (req, res) => {
     try {
         const { userId } = await req.auth();
-        const taskIds = req.body.tasksIds || req.body.taskIds || (req.params.id ? [req.params.id] : []);
+        const { taskIds } = req.body.tasksIds || req.body.taskIds || (req.params.id ? [req.params.id] : []);
 
         if (!taskIds || taskIds.length === 0) {
             return res.status(400).json({ message: "No task IDs provided" });

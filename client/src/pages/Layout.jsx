@@ -27,7 +27,7 @@ const Layout = () => {
         if (isLoaded && user) {
             dispatch(fetchWorkspaces({ getToken }))
         }
-    }, [user, isLoaded, userMemberships?.data?.length])
+    }, [user, isLoaded, userMemberships?.data?.length, dispatch, getToken])
 
     if (!isLoaded) {
         return (
