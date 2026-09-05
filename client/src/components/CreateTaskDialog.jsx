@@ -38,7 +38,7 @@ export default function CreateTaskDialog({ showCreateTask, setShowCreateTask, pr
                 { ...formData, workspaceId: currentWorkspace.id, projectId },
                 { headers: { Authorization: `Bearer ${await getToken()}` } }
             );
-            showCreateTask(false)
+            setShowCreateTask(false);
 
             setFormData({
                 title: "",
@@ -48,9 +48,12 @@ export default function CreateTaskDialog({ showCreateTask, setShowCreateTask, pr
                 priority: "MEDIUM",
                 assigneeId: "",
                 due_date: "",
-            })
+            });
             toast.success("Task created successfully");
-            dispatch(addTask(data.task));
+            const newTask = data.task || data.taskWithAssigne;
+            if (newTask) {
+                dispatch(addTask(newTask));
+            }
         } catch (error) {
             toast.error(error?.response?.data?.message || error.message || "Failed to create task");
         } finally {

@@ -1,14 +1,18 @@
 import { useState, useRef, useEffect } from "react";
-import { ChevronDown, Check, Plus } from "lucide-react";
+import { ChevronDown, Check, Plus, Trash } from "lucide-react";
 import { useDispatch, useSelector } from "react-redux";
-import { setCurrentWorkspace } from "../features/workspaceSlice";
+import { setCurrentWorkspace, deleteWorkspace } from "../features/workspaceSlice";
 import { useNavigate } from "react-router-dom";
-import { useClerk, useOrganizationList } from "@clerk/react";
+import { useClerk, useOrganizationList, useOrganization, useAuth } from "@clerk/react";
+import toast from "react-hot-toast";
+import api from "../configs/api";
 
 function WorkspaceDropdown() {
 
     const { setActive, userMemberships, isLoaded } = useOrganizationList({ userMemberships: true });
+    const { organization, isLoaded: isOrgLoaded } = useOrganization();
     const { openCreateOrganization } = useClerk();
+    const { getToken } = useAuth();
 
     const { workspaces } = useSelector((state) => state.workspace);
     const currentWorkspace = useSelector((state) => state.workspace?.currentWorkspace || null);
@@ -19,10 +23,43 @@ function WorkspaceDropdown() {
     const navigate = useNavigate();
 
     const onSelectWorkspace = (organizationId) => {
-        setActive({ organization: organizationId });
+        if (organization?.id !== organizationId && setActive) {
+            setActive({ organization: organizationId });
+        }
         dispatch(setCurrentWorkspace(organizationId));
         setIsOpen(false);
         navigate('/');
+    };
+
+    const handleDeleteWorkspace = async (e, workspaceId) => {
+        e.stopPropagation();
+        if (!window.confirm("Delete this workspace? All projects and tasks inside it will be permanently deleted.")) return;
+        try {
+            const token = await getToken();
+            toast.loading("Deleting workspace...");
+            await api.delete(`/api/workspace/${workspaceId}`, { headers: { Authorization: `Bearer ${token}` } });
+            dispatch(deleteWorkspace(workspaceId));
+            if (userMemberships?.revalidate) {
+                await userMemberships.revalidate();
+            }
+            toast.dismiss();
+            toast.success("Workspace deleted");
+            // If it was the active workspace, switch to another
+            if (currentWorkspace?.id === workspaceId) {
+                const remaining = (userMemberships?.data || [])
+                    .map((m) => m.organization)
+                    .filter((w) => w.id !== workspaceId);
+                if (remaining.length > 0) {
+                    onSelectWorkspace(remaining[0].id);
+                } else {
+                    dispatch(setCurrentWorkspace(null));
+                    navigate('/');
+                }
+            }
+        } catch (error) {
+            toast.dismiss();
+            toast.error(error?.response?.data?.message || error.message);
+        }
     };
 
     // Close dropdown on outside click
@@ -37,10 +74,16 @@ function WorkspaceDropdown() {
     }, []);
 
     useEffect(() => {
-        if (currentWorkspace && isLoaded && setActive) {
+        if (
+            currentWorkspace?.id &&
+            isLoaded &&
+            isOrgLoaded &&
+            setActive &&
+            organization?.id !== currentWorkspace.id
+        ) {
             setActive({ organization: currentWorkspace.id });
         }
-    }, [currentWorkspace, isLoaded, setActive]);
+    }, [currentWorkspace?.id, isLoaded, isOrgLoaded, setActive, organization?.id]);
 
     return (
         <div className="relative m-4" ref={dropdownRef}>
@@ -66,7 +109,7 @@ function WorkspaceDropdown() {
                             Workspaces
                         </p>
                         {userMemberships?.data?.map(({ organization }) => (
-                            <div key={organization.id} onClick={() => onSelectWorkspace(organization.id)} className="flex items-center gap-3 p-2 cursor-pointer rounded hover:bg-gray-100 dark:hover:bg-zinc-800" >
+                            <div key={organization.id} onClick={() => onSelectWorkspace(organization.id)} className="flex items-center gap-3 p-2 cursor-pointer rounded hover:bg-gray-100 dark:hover:bg-zinc-800 group" >
                                 <img src={organization.imageUrl || organization.image_url} alt={organization.name} className="w-6 h-6 rounded" />
                                 <div className="flex-1 min-w-0">
                                     <p className="text-sm font-medium text-gray-800 dark:text-white truncate">
@@ -79,6 +122,13 @@ function WorkspaceDropdown() {
                                 {currentWorkspace?.id === organization.id && (
                                     <Check className="w-4 h-4 text-blue-600 dark:text-blue-400 flex-shrink-0" />
                                 )}
+                                <button
+                                    onClick={(e) => handleDeleteWorkspace(e, organization.id)}
+                                    className="opacity-0 group-hover:opacity-100 transition-opacity p-1 rounded hover:bg-red-100 dark:hover:bg-red-500/20 text-red-500 dark:text-red-400 flex-shrink-0"
+                                    title="Delete workspace"
+                                >
+                                    <Trash className="w-3.5 h-3.5" />
+                                </button>
                             </div>
                         ))}
                     </div>

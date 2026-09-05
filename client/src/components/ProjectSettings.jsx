@@ -4,7 +4,7 @@ import { useAuth } from "@clerk/react";
 import { useDispatch } from "react-redux";
 import toast from "react-hot-toast";
 import api from "../configs/api";
-import { fetchWorkspaces } from "../features/workspaceSlice";
+import { updateProject } from "../features/workspaceSlice";
 import AddProjectMember from "./AddProjectMember";
 
 export default function ProjectSettings({ project }) {
@@ -29,7 +29,7 @@ export default function ProjectSettings({ project }) {
         if (!project?.id) return;
         try {
             setIsSubmitting(true);
-            await api.put(
+            const { data } = await api.put(
                 "/api/projects",
                 {
                     id: project.id,
@@ -39,7 +39,7 @@ export default function ProjectSettings({ project }) {
                 { headers: { Authorization: `Bearer ${await getToken()}` } }
             );
             toast.success("Project updated successfully");
-            await dispatch(fetchWorkspaces({ getToken }));
+            dispatch(updateProject(data.project));
         } catch (error) {
             toast.error(error?.response?.data?.message || error.message || "Failed to update project");
         } finally {

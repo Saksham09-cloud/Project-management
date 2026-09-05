@@ -1,4 +1,6 @@
 import prisma from "../config/prisma.js";
+import sendEmail from "../config/nodemailer.js";
+import { clearWorkspaceCache } from "./workspaceController.js";
 
 // Create Project
 export const createProject = async (req, res) => {
@@ -104,6 +106,7 @@ export const createProject = async (req, res) => {
             },
         });
 
+        clearWorkspaceCache();
         return res.json({ project: projectWithMembers, message: "Project created successfully" });
     } catch (error) {
         console.log(error);
@@ -197,6 +200,7 @@ export const updateProject = async (req, res) => {
             },
         });
 
+        clearWorkspaceCache();
         return res.json({ project: updatedProject, message: "Project updated successfully" });
     } catch (error) {
         console.log(error);
@@ -265,6 +269,31 @@ export const addMember = async (req, res) => {
             },
         });
 
+        // Send email notification to added member
+        if (user.email) {
+            const origin = req.headers.origin || "";
+            const projectLink = origin ? `${origin}/projects` : "#";
+            sendEmail({
+                to: user.email,
+                subject: `You've been added to project: ${project.name}`,
+                body: `
+                    <div style="max-width: 600px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; color: #1f2937;">
+                        <h2 style="color: #111827;">Hi ${user.name || "there"}, 👋</h2>
+                        <p style="font-size: 16px; margin: 12px 0;">
+                            You have been added to the project <strong>${project.name}</strong>.
+                        </p>
+                        ${project.description ? `<p style="color: #4b5563; font-size: 14px;"><strong>Description:</strong> ${project.description}</p>` : ""}
+                        <div style="margin: 24px 0;">
+                            <a href="${projectLink}" style="background-color: #2563eb; padding: 12px 24px; border-radius: 6px; color: #ffffff; font-weight: 600; font-size: 15px; text-decoration: none; display: inline-block;">
+                                View Project
+                            </a>
+                        </div>
+                    </div>
+                `,
+            }).catch((err) => console.error("Project add email send error:", err?.message || err));
+        }
+
+        clearWorkspaceCache();
         return res.json({ member, message: "Member added successfully" });
     } catch (error) {
         console.log(error);

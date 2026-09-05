@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import Navbar from '../components/Navbar'
 import Sidebar from '../components/Sidebar'
 import { Outlet } from 'react-router-dom'
@@ -17,6 +17,23 @@ const Layout = () => {
     const { getToken } = useAuth()
     const { userMemberships } = useOrganizationList({ userMemberships: true })
 
+    const getTokenRef = useRef(getToken)
+    useEffect(() => {
+        getTokenRef.current = getToken
+    })
+
+    const hasFetchedInitialRef = useRef(false)
+    const lastUserIdRef = useRef(null)
+    const prevOrgCountRef = useRef(null)
+
+    // Reset initial fetch flag if user changes
+    useEffect(() => {
+        if (user?.id !== lastUserIdRef.current) {
+            lastUserIdRef.current = user?.id
+            hasFetchedInitialRef.current = false
+        }
+    }, [user?.id])
+
     // Initial load of theme
     useEffect(() => {
         dispatch(loadTheme())
@@ -24,10 +41,28 @@ const Layout = () => {
 
     // Initial load and refetch of workspaces
     useEffect(() => {
-        if (isLoaded && user) {
-            dispatch(fetchWorkspaces({ getToken }))
+        if (!isLoaded || !user?.id) return
+
+        const currentOrgCount = userMemberships?.data?.length
+
+        // Fetch once when user is authenticated
+        if (!hasFetchedInitialRef.current) {
+            hasFetchedInitialRef.current = true
+            prevOrgCountRef.current = currentOrgCount
+            dispatch(fetchWorkspaces({ getToken: () => getTokenRef.current() }))
+            return
         }
-    }, [user, isLoaded, userMemberships?.data?.length, dispatch, getToken])
+
+        // Only refetch if organization count actually changed (e.g., workspace created or deleted)
+        if (
+            typeof currentOrgCount === 'number' &&
+            typeof prevOrgCountRef.current === 'number' &&
+            currentOrgCount !== prevOrgCountRef.current
+        ) {
+            prevOrgCountRef.current = currentOrgCount
+            dispatch(fetchWorkspaces({ getToken: () => getTokenRef.current() }))
+        }
+    }, [user?.id, isLoaded, userMemberships?.data?.length, dispatch])
 
     if (!isLoaded) {
         return (
