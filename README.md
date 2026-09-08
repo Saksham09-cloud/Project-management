@@ -134,10 +134,7 @@ cd planora
    npm install
    ```
 
-3. Create your `.env` file based on the template:
-   ```bash
-   cp .env.example .env
-   ```
+3. Configure server environment variables in `server/.env`:
    *(Ensure `DATABASE_URL`, `DIRECT_URL`, `CLERK_SECRET_KEY`, and `INNGEST_SIGNING_KEY` are provided).*
 
 4. Generate Prisma client and sync database schema:
@@ -228,10 +225,10 @@ Contributions are always welcome! Whether it's reporting an issue, proposing an 
 4. Push to the Branch (`git push origin feature/AmazingFeature`)
 5. Open a Pull Request
 
-Please read [CONTRIBUTING.md](./CONTRIBUTING.md) for full guidelines.
+Please read [client/CONTRIBUTING.md](./client/CONTRIBUTING.md) for full guidelines.
 
 ---
 
 ## 📜 License
 
-Distributed under the **MIT License**. See `LICENSE.md` for more information.
+Distributed under the **MIT License**. See `client/LICENSE.md` for more information.
