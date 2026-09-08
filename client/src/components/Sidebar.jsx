@@ -29,6 +29,21 @@ const Sidebar = ({ isSidebarOpen, setIsSidebarOpen }) => {
 
     return (
         <div ref={sidebarRef} className={`z-10 bg-white dark:bg-zinc-900 min-w-68 flex flex-col h-screen border-r border-gray-200 dark:border-zinc-800 max-sm:absolute transition-all ${isSidebarOpen ? 'left-0' : '-left-full'} `} >
+            {/* Planora Brand Header */}
+            <div className="flex items-center gap-3 px-5 py-4 border-b border-gray-200 dark:border-zinc-800">
+                <div className="flex items-center justify-center size-8 rounded-lg bg-gradient-to-tr from-blue-600 to-indigo-500 text-white font-bold text-base shadow-sm shadow-blue-500/20">
+                    P
+                </div>
+                <div className="flex flex-col">
+                    <span className="text-base font-bold tracking-tight text-gray-900 dark:text-white leading-tight">
+                        Planora
+                    </span>
+                    <span className="text-[10px] text-gray-400 dark:text-zinc-500 font-medium uppercase tracking-wider">
+                        Workspace Hub
+                    </span>
+                </div>
+            </div>
+
             <WorkspaceDropdown />
             <hr className='border-gray-200 dark:border-zinc-800' />
             <div className='flex-1 overflow-y-scroll no-scrollbar flex flex-col'>

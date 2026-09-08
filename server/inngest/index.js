@@ -4,7 +4,7 @@ import sendEmail from "../config/nodemailer.js";
 
 // Create Inngest client
 export const inngest = new Inngest({
-    id: "project-management",
+    id: "planora",
 });
 
 // ======================================================
@@ -206,7 +206,7 @@ const sendTaskAssignmentEmail = inngest.createFunction(
         await step.run("send-task-assignment-email", async () => {
             await sendEmail({
                 to: task.assignee.email,
-                subject: `New Task Assignment in ${task.project.name}`,
+                subject: `[Planora] New Task Assignment in ${task.project.name}`,
                 body: `
                     <div style="max-width: 600px;">
                         <h2>Hi ${task.assignee.name}, 👋</h2>
@@ -306,7 +306,7 @@ const sendTaskAssignmentEmail = inngest.createFunction(
                 // ==================================================
                 await sendEmail({
                     to: updatedTask.assignee.email,
-                    subject: `Task Overdue: ${updatedTask.title}`,
+                    subject: `[Planora] Task Overdue: ${updatedTask.title}`,
                     body: `
                         <div style="max-width: 600px;">
                             <h2>Hi ${updatedTask.assignee.name},</h2>
