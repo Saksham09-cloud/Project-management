@@ -175,7 +175,7 @@ cd planora
    ```
 
 5. Open [http://localhost:5173](http://localhost:5173) in your browser.
-
+https://projemgmt-f.vercel.app/
 ---
 
 ## 🔐 Environment Variables
